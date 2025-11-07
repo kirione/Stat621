@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Analytics for {{ user_name }}</title>
+</head>
+<body>
+    <h1>Analytics for {{ user_name }}</h1>
+
+    <h2>Post Counts by Rating</h2>
+    <ul>
+        {% for rating, count in rating_counts.items() %}
+            <li>{{ rating }}: {{ count }}</li>
+        {% endfor %}
+    </ul>
+
+    <h2>Top 10 Tags</h2>
+    <ul>
+        {% for tag, count in tag_counts.items() %}
+            <li>{{ tag }}: {{ count }}</li>
+        {% endfor %}
+    </ul>
+
+    <a href="/">Back</a>
+</body>
+</html>
