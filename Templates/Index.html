@@ -2,14 +2,20 @@
 <html>
 <head>
     <title>e621 Analytics MVP</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>Enter e621 Username & Auth API</h1>
+    <h1>Stat621 - Your favorite statistics class</h1>
+
+    <h2>Enter the e621 Username you wish to lookup OwO</h2>
     <form method="post">
         <input type="text" name="user_name" placeholder="Username" required>
         
         <button type="submit">Get Analytics</button>
     </form>
+
+    
+    <p class="signature">Made by Kirione</p>
 
 </body>
 </html>

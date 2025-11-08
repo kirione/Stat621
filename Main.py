@@ -3,7 +3,8 @@ import requests
 from requests.auth import HTTPBasicAuth
 import pandas as pd
 from bs4 import BeautifulSoup
-
+import webbrowser
+import re
 
 #Global Variables declaration
 username = "your_username"
@@ -31,12 +32,24 @@ def fetch_analytics(user_name):
     params = {"name": user_name} 
     response = requests.get(E621_API, headers=HEADERS, params=params)
     print("Status:", response.status_code)
-    #print("Response text:", response.text[:5000])
 
     if response.status_code != 200:
         return f"Error fetching data: {response.status_code}"
 
     soup = BeautifulSoup(response.text, "html.parser")
+    print ("Response Text:", response.text)
+
+    # Find the <script> tag containing "window.___deferred_posts"
+    script_tag = soup.find("script", string=re.compile(r"window.___deferred_posts"))
+    print (f"script found, script_tag:",{script_tag})
+    if script_tag:
+    # Extract JSON text from JS assignment
+        avatar_url = re.findall(r'"sample_url"\s*:\s*"([^"]+)"', script_tag.string)
+        if avatar_url:
+            avatar_url = avatar_url[0]
+            print (f"matched file url:",{avatar_url})
+
+    #Extract user_id
     for a in soup.find_all("a", href=True):
         href = a.get('href', '')  # safely get the href attribute
         if href.startswith("/users/") and href[7:].isdigit():
@@ -53,6 +66,7 @@ def fetch_analytics(user_name):
 
     # Convert to pandas DataFrame
     df = pd.DataFrame(data)
+    print(df.columns)
     
     # Example analytics:
     # Count by rating
@@ -64,7 +78,7 @@ def fetch_analytics(user_name):
     tag_counts = pd.Series(all_tags).value_counts().head(10).to_dict()
 
     return render_template("analytics.html", user_name=user_name,
-                           rating_counts=rating_counts, tag_counts=tag_counts)
+                           rating_counts=rating_counts, tag_counts=tag_counts,avatar_url=avatar_url)
 
 if __name__ == "__main__":
     app.run(debug=True)

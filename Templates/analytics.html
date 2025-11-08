@@ -2,14 +2,23 @@
 <html>
 <head>
     <title>Analytics for {{ user_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
 </head>
 <body>
-    <h1>Analytics for {{ user_name }}</h1>
+    <h1>Stat621 - Your favorite statistics class</h1>
+    <h2>Analytics for {{ user_name }}</h2>
+    {% if avatar_url %}
+        <img src="{{ avatar_url }}" alt="{{ user_name }}'s avatar" style="width:200px; height:200px">
+    {% else %}
+        <p>No avatar found.</p>
+    {% endif %}
 
     <h2>Post Counts by Rating</h2>
     <ul>
         {% for rating, count in rating_counts.items() %}
-            <li>{{ rating }}: {{ count }}</li>
+            {% set rating_names = {'s': 'Safe', 'q': 'Questionable', 'e': 'Explicit'} %}
+            <li>{{ rating_names.get(rating,rating) }}: {{ count }}</li>
         {% endfor %}
     </ul>
 
@@ -21,5 +30,6 @@
     </ul>
 
     <a href="/">Back</a>
+    <p class="signature">Made by Kirione</p>
 </body>
 </html>

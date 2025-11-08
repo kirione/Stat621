@@ -1,0 +1,14 @@
+body {
+  background-color: #152f57; /* light bluish-gray background */
+  font-family: inherit,Arial, sans-serif;
+  color: #e6e6e6;
+}
+
+.signature {
+  position: fixed;
+  bottom: 10px;
+  right: 15px;
+  font-size: 14px;
+  color: #e6e6e6;
+  font-style: italic;
+}
