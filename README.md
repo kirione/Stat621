@@ -25,3 +25,7 @@ Backend: Python, Node.js, PHP, etc.
 **Hosting**
 Flask app can run locally at http://127.0.0.1:5000/
 No external server required at this stage.
+
+-----------------------------------------------------------------
+**Front-end Improvements**
+Update visual themes to match E621 themes and add pandas plots
