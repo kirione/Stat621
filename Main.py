@@ -1,4 +1,7 @@
 from flask import Flask, render_template, request
+import matplotlib.pyplot as plt
+import io
+import base64
 import requests
 from requests.auth import HTTPBasicAuth
 import pandas as pd
@@ -7,12 +10,18 @@ import webbrowser
 import re
 
 #Global Variables declaration
+#User Details
 username = "your_username"
-api_key = "your_api_key"
+api_key = "your_api_key" #Unused currently
+avatar_url = "N/A"
+user_id = "N/A"
+
+#Dataframes
+favorites_df = pd.DataFrame()
+
 
 app = Flask(__name__)
 
-E621_API = "https://e621.net/users.json"
 
 HEADERS = {
     "User-Agent": "Stat621 (by kirione)"
@@ -22,7 +31,6 @@ HEADERS = {
 def index():
     if request.method == "POST":
         user_name = request.form.get("user_name")
-        #api_key = request.form.get("api_key")
         return fetch_analytics(user_name)
     return render_template("index.html")
 
@@ -30,12 +38,13 @@ def fetch_analytics(user_name):
     print(f"Fetching data for user: {user_name}")
     # Fetch profile from e621 by username
     params = {"name": user_name} 
-    response = requests.get(E621_API, headers=HEADERS, params=params)
+    response = requests.get("https://e621.net/users.json", headers=HEADERS, params=params)
     print("Status:", response.status_code)
 
     if response.status_code != 200:
         return f"Error fetching data: {response.status_code}"
 
+    # Parse user page HTML to extract avatar URL and user_id
     soup = BeautifulSoup(response.text, "html.parser")
     print ("Response Text:", response.text)
 
@@ -43,11 +52,11 @@ def fetch_analytics(user_name):
     script_tag = soup.find("script", string=re.compile(r"window.___deferred_posts"))
     print (f"script found, script_tag:",{script_tag})
     if script_tag:
-    # Extract JSON text from JS assignment
+    # Extract avatar url from script_tag
         avatar_url = re.findall(r'"sample_url"\s*:\s*"([^"]+)"', script_tag.string)
         if avatar_url:
             avatar_url = avatar_url[0]
-            print (f"matched file url:",{avatar_url})
+            print (f"avatar url:",{avatar_url})
 
     #Extract user_id
     for a in soup.find_all("a", href=True):
@@ -57,28 +66,48 @@ def fetch_analytics(user_name):
             print("Found user ID:", user_id)
     
 
-    # Fetch favorite posts by user_id
+    # Fetch favorite posts using user_id with favorites API
     params = {"user_id": user_id} 
     response = requests.get("https://e621.net/favorites.json", headers=HEADERS, params=params)
     print("Fetching favorites:")
-    data = response.json().get("posts", [])
+    favorites_data = response.json().get("posts", [])
 
 
-    # Convert to pandas DataFrame
-    df = pd.DataFrame(data)
-    print(df.columns)
+    # Convert user favorites data to pandas DataFrame
+    favorites_df = pd.DataFrame(favorites_data)
+    print(favorites_df.columns)
     
-    # Example analytics:
+    # analytics visualization:
     # Count by rating
-    rating_counts = df['rating'].value_counts().to_dict()
+    rating_counts = favorites_df['rating'].value_counts().to_dict()
     
-    # Count top 10 tags
-    tags_series = df['tags'].apply(lambda x: x['general'])
-    all_tags = [tag for sublist in tags_series for tag in sublist]
-    tag_counts = pd.Series(all_tags).value_counts().head(10).to_dict()
+    #top 10 general tags list
+    general_tags_series = favorites_df['tags'].apply(lambda x: x['general'])
+    # Flatten the list of lists and count occurrences
+    general_all_tags = [tag for sublist in general_tags_series for tag in sublist]
+    tag_counts = pd.Series(general_all_tags).value_counts().head(10).to_dict()
+
+    #Bar Chart Creation for Top Tags
+    #df_toptags = pd.Series(tag_counts)
+    # Plot
+    plt.figure(figsize=(8,4))
+    plt.bar(tag_counts.keys(), tag_counts.values())
+    plt.title("Top Tags")
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+
+    # Save the plot to a BytesIO object
+    buf = io.BytesIO()
+    plt.tight_layout()
+    plt.savefig(buf, format='png')
+    plt.close()
+    buf.seek(0)
+
+    # Encode to base64
+    general_tags_img = base64.b64encode(buf.getvalue()).decode('utf-8')
 
     return render_template("analytics.html", user_name=user_name,
-                           rating_counts=rating_counts, tag_counts=tag_counts,avatar_url=avatar_url)
+                           rating_counts=rating_counts, tag_counts=tag_counts,avatar_url=avatar_url, general_toptags_chart=general_tags_img)
 
 if __name__ == "__main__":
     app.run(debug=True)
