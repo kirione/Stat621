@@ -8,6 +8,7 @@ import pandas as pd
 from bs4 import BeautifulSoup
 import webbrowser
 import re
+import json
 
 #Global Variables declaration
 #User Details
@@ -19,7 +20,11 @@ user_id = "N/A"
 #Dataframes
 favorites_df = pd.DataFrame()
 
-
+#Load allowed e621 tags from JSON
+with open('tags.json', 'r', encoding='utf-8') as f:
+    allowed_tags = set(json.load(f))  # set for fast lookup
+    
+#Flask App Initialization
 app = Flask(__name__)
 
 
@@ -85,13 +90,19 @@ def fetch_analytics(user_name):
     general_tags_series = favorites_df['tags'].apply(lambda x: x['general'])
     # Flatten the list of lists and count occurrences
     general_all_tags = [tag for sublist in general_tags_series for tag in sublist]
-    tag_counts = pd.Series(general_all_tags).value_counts().head(10).to_dict()
+    tag_counts = pd.Series(general_all_tags).value_counts().to_dict()
+    #Filter the tag_counts to include only allowed tags
+    filtered_tag_counts = {tag: count for tag, count in tag_counts.items() if tag in allowed_tags}
+    #Replace all _ with space in tag names
+    filtered_tag_counts = {tag.replace('_', ' '): count for tag, count in filtered_tag_counts.items()}
+    #Select top 5 tags by count
+    top_tags = dict(sorted(filtered_tag_counts.items(), key=lambda item: item[1], reverse=True)[:5])
 
     #Bar Chart Creation for Top Tags
     #df_toptags = pd.Series(tag_counts)
     # Plot
     plt.figure(figsize=(8,4))
-    plt.bar(tag_counts.keys(), tag_counts.values())
+    plt.bar(top_tags.keys(), top_tags.values())
     plt.title("Top Tags")
     plt.xticks(rotation=45)
     plt.tight_layout()
@@ -107,7 +118,7 @@ def fetch_analytics(user_name):
     general_tags_img = base64.b64encode(buf.getvalue()).decode('utf-8')
 
     return render_template("analytics.html", user_name=user_name,
-                           rating_counts=rating_counts, tag_counts=tag_counts,avatar_url=avatar_url, general_toptags_chart=general_tags_img)
+                           rating_counts=rating_counts, top_tags=top_tags,avatar_url=avatar_url, general_toptags_chart=general_tags_img)
 
 if __name__ == "__main__":
     app.run(debug=True)

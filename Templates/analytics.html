@@ -22,9 +22,9 @@
         {% endfor %}
     </ul>
 
-    <h2>Top 10 Tags</h2>
+    <h2>Top 10 favorite Tags</h2>
     <ul>
-        {% for tag, count in tag_counts.items() %}
+        {% for tag, count in top_tags.items() %}
             <li>{{ tag }}: {{ count }}</li>
         {% endfor %}
     </ul>
