@@ -14,7 +14,21 @@
         <p>No avatar found.</p>
     {% endif %}
 
-    <h2>Post Counts by Rating</h2>
+    <h2>Top 5 Posts by Favorites</h2>
+{% set sorted_posts = posts_data.posts | sort(attribute='fav_count', reverse=True) %}
+<ul>
+  {% for post in sorted_posts[:5] %}
+    <li>
+      <a href="https://e621.net/posts/{{ post.id }}" target="_blank">
+        Post {{ post.id }}
+      </a> — ❤️ {{ post.fav_count }} favorites
+    </li>
+  {% endfor %}
+</ul>
+
+
+
+    <h2>Favorites Count by Rating</h2>
     <ul>
         {% for rating, count in rating_counts.items() %}
             {% set rating_names = {'s': 'Safe', 'q': 'Questionable', 'e': 'Explicit'} %}

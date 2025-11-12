@@ -10,15 +10,9 @@ import webbrowser
 import re
 import json
 
-#Global Variables declaration
-#User Details
-username = "your_username"
-api_key = "your_api_key" #Unused currently
-avatar_url = "N/A"
-user_id = "N/A"
-
 #Dataframes
 favorites_df = pd.DataFrame()
+posts_df = pd.DataFrame()
 
 #Load allowed e621 tags from JSON
 with open('tags.json', 'r', encoding='utf-8') as f:
@@ -51,11 +45,11 @@ def fetch_analytics(user_name):
 
     # Parse user page HTML to extract avatar URL and user_id
     soup = BeautifulSoup(response.text, "html.parser")
-    print ("Response Text:", response.text)
+    #print ("Response Text:", response.text)
 
     # Find the <script> tag containing "window.___deferred_posts"
     script_tag = soup.find("script", string=re.compile(r"window.___deferred_posts"))
-    print (f"script found, script_tag:",{script_tag})
+    #print (f"script found, script_tag:",{script_tag})
     if script_tag:
     # Extract avatar url from script_tag
         avatar_url = re.findall(r'"sample_url"\s*:\s*"([^"]+)"', script_tag.string)
@@ -70,22 +64,28 @@ def fetch_analytics(user_name):
             user_id = int(href[7:])
             print("Found user ID:", user_id)
     
+    params = {"tags": f"user:{user_name}"} 
+    #Fetch posts uploaded by user
+    response = requests.get("https://e621.net/posts.json", headers=HEADERS, params=params)
+    print("Fetching posts:")
+    posts_data = response.json()
+    print(f"Found {len(posts_data['posts'])} posts")
 
-    # Fetch favorite posts using user_id with favorites API
     params = {"user_id": user_id} 
+    # Fetch favorite posts using user_id with favorites API
     response = requests.get("https://e621.net/favorites.json", headers=HEADERS, params=params)
     print("Fetching favorites:")
     favorites_data = response.json().get("posts", [])
-
 
     # Convert user favorites data to pandas DataFrame
     favorites_df = pd.DataFrame(favorites_data)
     print(favorites_df.columns)
     
     # analytics visualization:
+
+    #Favorites Analysis
     # Count by rating
     rating_counts = favorites_df['rating'].value_counts().to_dict()
-    
     #top 10 general tags list
     general_tags_series = favorites_df['tags'].apply(lambda x: x['general'])
     # Flatten the list of lists and count occurrences
@@ -100,7 +100,7 @@ def fetch_analytics(user_name):
 
     #Bar Chart Creation for Top Tags
     #df_toptags = pd.Series(tag_counts)
-    # Plot
+    #Plot
     plt.figure(figsize=(8,4))
     plt.bar(top_tags.keys(), top_tags.values())
     plt.title("Top Tags")
@@ -118,7 +118,7 @@ def fetch_analytics(user_name):
     general_tags_img = base64.b64encode(buf.getvalue()).decode('utf-8')
 
     return render_template("analytics.html", user_name=user_name,
-                           rating_counts=rating_counts, top_tags=top_tags,avatar_url=avatar_url, general_toptags_chart=general_tags_img)
+                           rating_counts=rating_counts, top_tags=top_tags,avatar_url=avatar_url, general_toptags_chart=general_tags_img, posts_data=posts_data)
 
 if __name__ == "__main__":
     app.run(debug=True)
